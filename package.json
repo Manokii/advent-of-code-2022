@@ -5,8 +5,9 @@
   "main": "src/index.ts",
   "type": "module",
   "scripts": {
+    "clean": "rimraf -rf ./dist ./answers",
     "build": "esbuild ./src/index.ts --bundle --format=cjs --outfile=dist/index.cjs --platform=node",
-    "dev": "nodemon --watch \"src/**\" --ext \"ts,json,txt\" --ignore \"src/app/**/*\" --exec \"npm run build && node dist/index.cjs\"",
+    "dev": "nodemon --watch \"src/**\" --ext \"ts,json,txt\" --ignore \"src/app/**/*\" --exec \"npm run clean && npm run build && node dist/index.cjs\"",
     "start": "npm run build && node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +17,7 @@
     "@types/node": "18.11.11",
     "esbuild": "0.16.7",
     "nodemon": "2.0.20",
+    "rimraf": "3.0.2",
     "ts-node": "10.9.1",
     "typescript": "4.9.3"
   }

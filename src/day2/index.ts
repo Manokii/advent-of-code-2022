@@ -1,11 +1,10 @@
 import { readInput } from "utils/readInput"
 import { writeAnswer } from "utils/writeAnswer"
 
-type Lines = [string, string][]
+type Lines = string[][]
 type Status = keyof typeof points
 type OpponentKeys = keyof typeof opponentShape
 type SelfKeys = keyof typeof selfShape
-type Result = ReturnType<typeof getPartOneRoundResult>
 type Shape = typeof selfShape["X" | "Y" | "Z"]
 
 const points = {
@@ -38,66 +37,38 @@ const selfShape = {
   Z: "Scissors",
 } as const
 
-const DEFAULT_ANSWER_DATA = {
-  _answer: 0,
-  shapeScore: 0,
-  statusScore: 0,
-  total: 0,
-  opponentShapes: { Rock: 0, Paper: 0, Scissors: 0 },
-  selfShapes: { Rock: 0, Paper: 0, Scissors: 0 },
-}
-
 /**
  * @param arr lines of input
  * @returns [string, string][]
  */
 function getRounds(arr: string[]): Lines {
-  return arr.reduce<Lines>((acc, curr) => {
-    const [opponent, self] = curr.split(" ")
-    return [...acc, [opponent, self]]
-  }, [])
+  return arr.map((curr) => curr.split(" "))
 }
 
-function getPartOneResults(input: Lines) {
-  return input.map(([opponent, self]) =>
-    getPartOneRoundResult(opponent as OpponentKeys, self as SelfKeys)
-  )
+function getPartOneAnswer(input: Lines) {
+  const result = input.map((line) => {
+    const [opponent, self] = line as [OpponentKeys, SelfKeys]
+    const shapeScore = shapePoints[selfShape[self]]
+    let status = rps(opponentShape[opponent], selfShape[self])
+    const result = points[status]
+    return shapeScore + result
+  })
+  return getAnswer(result)
 }
 
-function getPartTwoResults(input: Lines) {
-  return input.map(([opponent, self]) =>
-    getPartTwoRoundResult(opponent as OpponentKeys, self as SelfKeys)
-  )
+function getPartTwoAnswer(input: Lines) {
+  const result = input.map((line) => {
+    const [opponent, self] = line as [OpponentKeys, SelfKeys]
+    const status = resultIntent[self]
+    const shapePlayed = rpsReversed(status, opponentShape[opponent])
+    const shapeScore = shapePoints[shapePlayed]
+    const result = points[status]
+    return shapeScore + result
+  })
+  return getAnswer(result)
 }
 
-function getPartOneRoundResult(opponent: OpponentKeys, self: SelfKeys) {
-  const shapeScore = shapePoints[selfShape[self]]
-  let status = rps(opponentShape[opponent], selfShape[self])
-  const result = points[status]
-  return {
-    status,
-    shapeScore,
-    statusScore: result,
-    total: shapeScore + result,
-    shape: { self: selfShape[self], opponent: opponentShape[opponent] },
-  }
-}
-
-function getPartTwoRoundResult(opponent: OpponentKeys, self: SelfKeys): Result {
-  const status = resultIntent[self]
-  const shapePlayed = rpsReversed(status, opponentShape[opponent])
-  const shapeScore = shapePoints[shapePlayed]
-  const result = points[status]
-
-  return {
-    status,
-    shapeScore,
-    statusScore: result,
-    total: shapeScore + result,
-    shape: { self: shapePlayed, opponent: opponentShape[opponent] },
-  }
-}
-
+// Rock Paper Scissor
 function rps(opponent: Shape, self: Shape): Status {
   if (opponent === self) return "draw"
   if (opponent === "Rock") return self === "Paper" ? "win" : "lose"
@@ -106,6 +77,7 @@ function rps(opponent: Shape, self: Shape): Status {
   return "draw"
 }
 
+// RPS but you play the shape of intended result against the opponent
 function rpsReversed(intendedResult: Status, opponent: Shape): Shape {
   if (intendedResult === "draw") return opponent
   if (intendedResult === "win") {
@@ -121,66 +93,21 @@ function rpsReversed(intendedResult: Status, opponent: Shape): Shape {
   return "Rock"
 }
 
-function getPartOneData(result: Result[]) {
-  return result.reduce(
-    (acc, curr) => {
-      return Object.assign(acc, {
-        _answer: acc._answer + curr.total,
-        selfShapes: {
-          Rock: acc.selfShapes.Rock + (curr.shape.self === "Rock" ? 1 : 0),
-          Paper: acc.selfShapes.Paper + (curr.shape.self === "Paper" ? 1 : 0),
-          Scissors: acc.selfShapes.Scissors + (curr.shape.self === "Scissors" ? 1 : 0),
-        },
-        opponentShapes: {
-          Rock: acc.opponentShapes.Rock + (curr.shape.opponent === "Rock" ? 1 : 0),
-          Paper: acc.opponentShapes.Paper + (curr.shape.opponent === "Paper" ? 1 : 0),
-          Scissors: acc.opponentShapes.Scissors + (curr.shape.opponent === "Scissors" ? 1 : 0),
-        },
-        shapeScore: acc.shapeScore + curr.shapeScore,
-        statusScore: acc.statusScore + curr.statusScore,
-        total: acc.total + curr.total,
-      })
-    },
-    { ...DEFAULT_ANSWER_DATA }
-  )
-}
-
-function getPartTwoData(result: Result[]) {
-  return result.reduce(
-    (acc, curr) => {
-      return Object.assign(acc, {
-        _answer: acc._answer + curr.total,
-        selfShapes: {
-          Rock: acc.selfShapes.Rock + (curr.shape.self === "Rock" ? 1 : 0),
-          Paper: acc.selfShapes.Paper + (curr.shape.self === "Paper" ? 1 : 0),
-          Scissors: acc.selfShapes.Scissors + (curr.shape.self === "Scissors" ? 1 : 0),
-        },
-        opponentShapes: {
-          Rock: acc.opponentShapes.Rock + (curr.shape.opponent === "Rock" ? 1 : 0),
-          Paper: acc.opponentShapes.Paper + (curr.shape.opponent === "Paper" ? 1 : 0),
-          Scissors: acc.opponentShapes.Scissors + (curr.shape.opponent === "Scissors" ? 1 : 0),
-        },
-        shapeScore: acc.shapeScore + curr.shapeScore,
-        statusScore: acc.statusScore + curr.statusScore,
-        total: acc.total + curr.total,
-      })
-    },
-    { ...DEFAULT_ANSWER_DATA }
-  )
+function getAnswer(result: number[]) {
+  return result.reduce((acc, curr) => {
+    return acc + curr
+  }, 0)
 }
 
 async function solution(inputPath: string, name: string) {
   const input = await readInput(inputPath)
   const rounds = getRounds(input.lines)
 
-  const partOneResult = getPartOneResults(rounds)
-  const partOneData = getPartOneData(partOneResult)
+  const partOneAnswer = getPartOneAnswer(rounds)
+  const partTwoAnswer = getPartTwoAnswer(rounds)
 
-  const partTwoResult = getPartTwoResults(rounds)
-  const partTwoData = getPartTwoData(partTwoResult)
-
-  await writeAnswer(Object.assign(partOneData, { _input: input.str }), name, 1)
-  await writeAnswer(Object.assign(partTwoData, { _input: input.str }), name, 2)
+  await writeAnswer(partOneAnswer, name, 1)
+  await writeAnswer(partTwoAnswer, name, 2)
 }
 
 const INPUT_FILE_SAMPLE = "./src/day2/input-sample.txt"
