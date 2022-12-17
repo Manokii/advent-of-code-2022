@@ -91,13 +91,41 @@ function getPartOneAnswer(dirs: DirMap) {
   }, 0)
 }
 
+function getPartTwoAnswer(files: FileMap, dirMap: DirMap) {
+  const diskSize = 70_000_000
+  const spaceNeeded = 30_000_000
+
+  const used = [...files.values()].reduce((acc, curr) => {
+    return acc + curr.fileSize
+  }, 0)
+
+  const freeSpace = diskSize - used
+  const spaceNeedToBeFreed = spaceNeeded - freeSpace
+
+  const dirs = [...dirMap.values()].reduce<Map<string, number>>((acc, curr) => {
+    const path = curr.path
+    const size = acc.get(path) || 0
+
+    const childrenSize = curr.childDirectories.reduce((acc, curr) => {
+      const dir = dirMap.get(curr)
+      return acc + (dir?.size || 0)
+    }, 0)
+
+    return acc.set(path, size + curr.size + childrenSize)
+  }, new Map())
+
+  const eligible = [...dirs.values()].filter((val) => val > spaceNeedToBeFreed)
+  return Math.min(...eligible)
+}
+
 // ===================================
 async function solution(inputPath: string, name: string) {
   const input = await readInput(inputPath, false)
-  const data = sequence(input.lines)
-  console.log(data.dirs)
-  const partOne = getPartOneAnswer(data.dirs)
+  const { files, dirs } = sequence(input.lines)
+  const partOne = getPartOneAnswer(dirs)
+  const partTwo = getPartTwoAnswer(files, dirs)
   await writeAnswer(partOne, name, 1)
+  await writeAnswer(partTwo, name, 2)
 }
 
 const INPUT_FILE_SAMPLE = "./src/day7/input-sample.txt"
