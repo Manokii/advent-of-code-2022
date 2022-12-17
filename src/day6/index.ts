@@ -3,10 +3,9 @@ import { writeAnswer } from "utils/writeAnswer"
 
 const getSignal = (input: string, characterCount: number) => {
   let signalMarker = 0
-
   for (let i = 0; i < input.length; i++) {
     const chars = input.slice(i, i + characterCount)
-    if (!isAllUnique(chars)) return
+    if (!isAllUnique(chars)) continue
     signalMarker = i + characterCount
     break
   }
